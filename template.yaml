@@ -3,13 +3,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   youtube-uploader
 
-  A simple Lambda function that prints "Hello World!" when invoked directly
+  A Lambda function that uploads video files from S3 to YouTube
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 30
-    MemorySize: 256
+    Timeout: 900
+    MemorySize: 1024
 
 Parameters:
   Environment:
@@ -34,9 +34,16 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+                # - secretsmanager:PutSecretValue
+              Resource: !Sub 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/YoutubeAPI-cKJ3lH'
       Environment:
         Variables:
           S3_BUCKET_NAME: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
+          YOUTUBE_API_SECRET_ID: 'TennisBuddies/YoutubeAPI'
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./uploader_lambda
