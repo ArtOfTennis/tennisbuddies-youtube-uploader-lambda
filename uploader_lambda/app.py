@@ -2,6 +2,7 @@ import json
 import boto3
 import os
 import mimetypes
+import requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -144,6 +145,9 @@ def lambda_handler(event, context):
     video_description = event.get('description', "Video uploaded by TennisBuddies")
     privacy_status = event.get('privacy_status', 'unlisted')
     
+    # Get webhook URL if provided
+    webhook_url = event.get('webhook_url')
+    
     if not s3_key:
         return {
             "statusCode": 400,
@@ -194,6 +198,18 @@ def lambda_handler(event, context):
                 }),
             }
             
+        # Send webhook notification if webhook_url is provided
+        webhook_response = None
+        if webhook_url and video_id:
+            try:
+                webhook_payload = {
+                    "youtube_video_id": video_id
+                }
+                webhook_response = requests.post(webhook_url, json=webhook_payload)
+                print(f"Webhook notification sent to {webhook_url}. Response: {webhook_response.status_code}")
+            except Exception as e:
+                print(f"Error sending webhook notification: {str(e)}")
+        
         # Clean up
         os.remove(local_file_path)
         print(f"Removed temporary file: {local_file_path}")
@@ -202,10 +218,10 @@ def lambda_handler(event, context):
             "statusCode": 200,
             "body": json.dumps({
                 "s3_key": s3_key,
-                # "fileType": file_type,
                 "fileSize": file_size,
                 "youtubeVideoId": video_id,
-                "youtubeUrl": f"https://www.youtube.com/watch?v={video_id}"
+                "youtubeUrl": f"https://www.youtube.com/watch?v={video_id}",
+                "webhookResponse": webhook_response.status_code if webhook_response else None
             }),
         }
         
