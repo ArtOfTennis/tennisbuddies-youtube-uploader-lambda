@@ -19,6 +19,9 @@ Resources:
       Architectures:
         - x86_64
       PackageType: Image
+      Policies:
+        - S3ReadPolicy:
+            BucketName: tennisbuddies-club
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./uploader_lambda
