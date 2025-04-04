@@ -10,7 +10,6 @@ def s3_event():
     """ Generates S3 Event for direct Lambda invocation"""
 
     return {
-        "s3BucketName": "my-youtube-videos-bucket",
         "s3ObjectKey": "videos/my-awesome-video.mp4"
     }
 
