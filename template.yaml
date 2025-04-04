@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  youtube-uploader
+
+  A simple Lambda function that prints "Hello World!" when invoked directly
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+
+Resources:
+  YouTubeUploaderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: uploader_lambda/
+      Architectures:
+        - x86_64
+      PackageType: Image
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ./uploader_lambda
+      DockerTag: python3.9-v1
+
+Outputs:
+  YouTubeUploaderFunction:
+    Description: "YouTube Uploader Lambda Function ARN"
+    Value: !GetAtt YouTubeUploaderFunction.Arn
+  YouTubeUploaderFunctionIamRole:
+    Description: "Implicit IAM Role created for YouTube Uploader function"
+    Value: !GetAtt YouTubeUploaderFunctionRole.Arn
