@@ -20,8 +20,11 @@ def get_authenticated_service():
     Get authenticated YouTube service using credentials from AWS Secrets Manager
     """
     try:
+        # Get AWS region from environment variable with fallback to us-west-1
+        aws_region = os.environ.get('AWS_SECRETS_MANAGER_REGION', 'us-west-1')
+        
         # Initialize AWS Secrets Manager client
-        secrets_client = boto3.client('secretsmanager', region_name='us-west-1')
+        secrets_client = boto3.client('secretsmanager', region_name=aws_region)
         
         # Get secret ID from environment variable
         secret_id = os.environ.get('YOUTUBE_API_SECRET_ID')

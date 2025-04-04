@@ -38,12 +38,12 @@ Resources:
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue
-                # - secretsmanager:PutSecretValue
               Resource: !Sub 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/YoutubeAPI-cKJ3lH'
       Environment:
         Variables:
           S3_BUCKET_NAME: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
           YOUTUBE_API_SECRET_ID: 'TennisBuddies/YoutubeAPI'
+          AWS_SECRETS_MANAGER_REGION: 'us-west-1'
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./uploader_lambda
