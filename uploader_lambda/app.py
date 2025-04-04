@@ -170,23 +170,23 @@ def lambda_handler(event, context):
         s3.download_file(bucket_name, s3_key, local_file_path)
         
         # Determine file type
-        file_type, _ = mimetypes.guess_type(local_file_path)
-        if not file_type:
-            file_type = 'application/octet-stream'
+        # file_type, _ = mimetypes.guess_type(local_file_path)
+        # if not file_type:
+        #     file_type = 'application/octet-stream'
         
         # Log the information
         print(f"Downloaded {s3_key} from {bucket_name}")
-        print(f"File Type: {file_type}")
+        # print(f"File Type: {file_type}")
         print(f"File Size: {file_size} bytes")
         
         # Check if the file is a video
-        if not file_type.startswith('video/'):
-            return {
-                "statusCode": 400,
-                "body": json.dumps({
-                    "error": f"File is not a video. File type: {file_type}"
-                }),
-            }
+        # if not file_type.startswith('video/'):
+        #     return {
+        #         "statusCode": 400,
+        #         "body": json.dumps({
+        #             "error": f"File is not a video. File type: {file_type}"
+        #         }),
+        #     }
             
         # Get authenticated YouTube service
         youtube = get_authenticated_service()
@@ -216,7 +216,7 @@ def lambda_handler(event, context):
             "statusCode": 200,
             "body": json.dumps({
                 "s3_key": s3_key,
-                "fileType": file_type,
+                # "fileType": file_type,
                 "fileSize": file_size,
                 "youtubeVideoId": video_id,
                 "youtubeUrl": f"https://www.youtube.com/watch?v={video_id}"
