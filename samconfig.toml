@@ -4,7 +4,7 @@ version = 0.1
 
 [default.global.parameters]
 stack_name = "youtube-uploader"
-image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
+# image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
 
 [default.build.parameters]
 cached = true
@@ -18,11 +18,21 @@ capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
-parameter_overrides = "Environment=prod"
+parameter_overrides = "Environment=\"dev\""
+guided = true
+s3_prefix = "youtube-uploader"
+image_repositories = ["YouTubeUploaderFunction=008082804869.dkr.ecr.us-west-1.amazonaws.com/youtubeuploaderee8a41e3/youtubeuploaderfunctiond54705c8repo"]
 
 [default.sync.parameters]
 watch = true
-parameter_overrides = "Environment=dev"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+region = "us-west-1"
+parameter_overrides = "Environment=\"dev\""
+guided = true
+s3_prefix = "youtube-uploader"
+image_repositories = ["YouTubeUploaderFunction=008082804869.dkr.ecr.us-west-1.amazonaws.com/youtubeuploaderee8a41e3/youtubeuploaderfunctiond54705c8repo"]
 
 [default.package.parameters]
 resolve_s3 = true
@@ -33,11 +43,12 @@ warm_containers = "EAGER"
 [default.local_start_lambda.parameters]
 warm_containers = "EAGER"
 
-[dev.deploy.parameters]
+[prod.deploy.parameters]
 stack_name = "youtube-uploader"
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
-parameter_overrides = "Environment=dev"
-image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
+parameter_overrides = "Environment=prod"
+# image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
+guided = true
