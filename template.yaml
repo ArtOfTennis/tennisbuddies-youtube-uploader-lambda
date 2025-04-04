@@ -8,8 +8,20 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
-    MemorySize: 128
+    Timeout: 30
+    MemorySize: 256
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    Description: Environment (dev or prod)
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, 'prod']
 
 Resources:
   YouTubeUploaderFunction:
@@ -19,6 +31,12 @@ Resources:
       Architectures:
         - x86_64
       PackageType: Image
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./uploader_lambda

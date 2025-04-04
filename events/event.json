@@ -1,4 +1,3 @@
 {
-  "s3BucketName": "my-youtube-videos-bucket",
   "s3ObjectKey": "videos/my-awesome-video.mp4"
 }
