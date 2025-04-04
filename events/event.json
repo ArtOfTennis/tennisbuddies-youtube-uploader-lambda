@@ -1,3 +1,6 @@
 {
-  "s3ObjectKey": "videos/my-awesome-video.mp4"
+  "s3_key": "085f5e9b-ea99-473b-931c-fda20e1dca37",
+  "title": "My Tennis Match",
+  "description": "Recorded at City Courts - 05/15/2023",
+  "privacy_status": "unlisted"
 }

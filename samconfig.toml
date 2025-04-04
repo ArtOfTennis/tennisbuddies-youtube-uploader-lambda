@@ -34,8 +34,10 @@ warm_containers = "EAGER"
 warm_containers = "EAGER"
 
 [dev.deploy.parameters]
+stack_name = "youtube-uploader"
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=dev"
+image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
