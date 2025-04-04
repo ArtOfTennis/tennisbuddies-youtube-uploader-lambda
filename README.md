@@ -8,7 +8,8 @@ This Lambda function:
 1. Retrieves a video file from an S3 bucket
 2. Authenticates with the YouTube API using credentials stored in AWS Secrets Manager
 3. Uploads the video to YouTube with specified metadata
-4. Returns the YouTube video ID and URL
+4. Sends a webhook notification if a webhook URL is provided
+5. Returns the YouTube video ID and URL
 
 ## Prerequisites
 
@@ -83,7 +84,8 @@ You can invoke the Lambda function with an event payload like this:
   "s3_key": "path/to/your/video.mp4",
   "title": "Your Video Title",
   "description": "Your video description",
-  "privacy_status": "unlisted"
+  "privacy_status": "unlisted",
+  "webhook_url": "https://your-webhook-endpoint.com/callback"
 }
 ```
 
@@ -91,8 +93,16 @@ Example using AWS CLI:
 
 ```bash
 aws lambda invoke --function-name youtube-uploader-YouTubeUploaderFunction-XXXXXXXXXXXX \
-  --payload '{"s3_key":"videos/match.mp4","title":"Tennis Match Highlights","description":"Exciting tennis match","privacy_status":"unlisted"}' \
+  --payload '{"s3_key":"videos/match.mp4","title":"Tennis Match Highlights","description":"Exciting tennis match","privacy_status":"unlisted","webhook_url":"https://your-webhook-endpoint.com/callback"}' \
   response.json
 ```
 
 The response will include the YouTube video ID and URL if successful.
+
+If a `webhook_url` is provided, the function will send a POST request to that URL with the YouTube video ID after a successful upload:
+
+```json
+{
+  "youtube_video_id": "VIDEO_ID"
+}
+```
