@@ -20,8 +20,9 @@ This Lambda function:
 ## Environment Variables
 
 The function uses the following environment variables:
-- `S3_BUCKET_NAME`: The S3 bucket containing video files (set via CloudFormation)
-- `YOUTUBE_API_SECRET_ID`: The ID of the Secret in AWS Secrets Manager containing YouTube API credentials
+- `S3_BUCKET_NAME`: The S3 bucket containing video files (either `tennisbuddies-club` for dev or `tennisbuddies-club-prod` for prod)
+- `YOUTUBE_API_SECRET_ID`: The ID of the Secret in AWS Secrets Manager containing YouTube API credentials (set to `TennisBuddies/YoutubeAPI`)
+- `AWS_SECRETS_MANAGER_REGION`: The AWS region for Secrets Manager (set to `us-west-1`)
 
 ## YouTube API Credentials
 
@@ -49,14 +50,29 @@ sam build
 To deploy to the dev environment:
 
 ```bash
-sam deploy --config-env dev
+sam deploy
 ```
 
 To deploy to production:
 
 ```bash
-sam deploy --config-env default
+sam deploy --config-env prod
 ```
+
+## Stack Configuration
+
+The application uses the following configuration:
+- Stack name: `youtube-uploader`
+- Region: `us-west-1`
+- ECR Repository: `008082804869.dkr.ecr.us-west-1.amazonaws.com/youtubeuploaderee8a41e3/youtubeuploaderfunctiond54705c8repo`
+- Timeout: 900 seconds (15 minutes)
+- Memory: 1024 MB
+
+## IAM Permissions
+
+The Lambda function has the following permissions:
+- Read access to the S3 bucket (`tennisbuddies-club` for dev or `tennisbuddies-club-prod` for prod)
+- Access to retrieve secret values from AWS Secrets Manager for the secret `TennisBuddies/YoutubeAPI`
 
 ## Invoking the Lambda Function
 
