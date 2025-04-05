@@ -39,11 +39,16 @@ Resources:
               Action:
                 - secretsmanager:GetSecretValue
               Resource: !Sub 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/YoutubeAPI-cKJ3lH'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/WebhookSecret-CfK4H6'
       Environment:
         Variables:
           S3_BUCKET_NAME: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
           YOUTUBE_API_SECRET_ID: 'TennisBuddies/YoutubeAPI'
           AWS_SECRETS_MANAGER_REGION: 'us-west-1'
+          WEBHOOK_SECRET_ID: 'TennisBuddies/WebhookSecret'
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./uploader_lambda

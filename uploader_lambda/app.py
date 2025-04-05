@@ -77,6 +77,33 @@ def get_authenticated_service():
         raise
 
 
+def get_webhook_secret():
+    """
+    Get webhook authentication details from AWS Secrets Manager
+    """
+    try:
+        # Get AWS region from environment variable with fallback to us-west-1
+        aws_region = os.environ.get('AWS_SECRETS_MANAGER_REGION', 'us-west-1')
+        
+        # Initialize AWS Secrets Manager client
+        secrets_client = boto3.client('secretsmanager', region_name=aws_region)
+        
+        # Get secret ID from environment variable
+        secret_id = os.environ.get('WEBHOOK_SECRET_ID')
+        if not secret_id:
+            print("WEBHOOK_SECRET_ID environment variable not set, webhook authentication will not be used")
+            return None
+        
+        # Get secret from AWS Secrets Manager
+        response = secrets_client.get_secret_value(SecretId=secret_id)
+        # Return the secret as plain text, not JSON
+        return response['SecretString']
+        
+    except Exception as e:
+        print(f"Error retrieving webhook secret: {e}")
+        return None
+
+
 def upload_to_youtube(youtube, filepath, title, description="Video uploaded by TennisBuddies", privacy_status="unlisted"):
     """
     Upload a video file to YouTube
@@ -202,10 +229,43 @@ def lambda_handler(event, context):
         webhook_response = None
         if webhook_url and video_id:
             try:
+                # Get webhook secrets if available
+                webhook_secret = get_webhook_secret()
+                
                 webhook_payload = {
                     "youtube_video_id": video_id
                 }
-                webhook_response = requests.post(webhook_url, json=webhook_payload)
+                
+                # Convert payload to JSON string for signature calculation
+                payload_json = json.dumps(webhook_payload)
+                
+                # Set up headers
+                headers = {
+                    'Content-Type': 'application/json'
+                }
+                
+                # Add signature if webhook secret is available
+                if webhook_secret:
+                    # Create HMAC SHA256 signature
+                    import hmac
+                    import hashlib
+                    
+                    signature = hmac.new(
+                        webhook_secret.encode('utf-8'),
+                        payload_json.encode('utf-8'),
+                        hashlib.sha256
+                    ).hexdigest()
+                    
+                    # Add signature to headers
+                    headers['x-webhook-signature'] = signature
+                
+                # Send the webhook request with headers
+                webhook_response = requests.post(
+                    webhook_url, 
+                    headers=headers,
+                    data=payload_json
+                )
+                
                 print(f"Webhook notification sent to {webhook_url}. Response: {webhook_response.status_code}")
             except Exception as e:
                 print(f"Error sending webhook notification: {str(e)}")
