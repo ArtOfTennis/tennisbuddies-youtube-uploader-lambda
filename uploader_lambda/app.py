@@ -3,6 +3,8 @@ import boto3
 import os
 import mimetypes
 import requests
+import ffmpeg
+import uuid
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -57,15 +59,15 @@ def get_authenticated_service():
         )
         
         # Refresh if expired
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+        # if creds and creds.expired and creds.refresh_token:
+        #     creds.refresh(Request())
             
-            # Update secret with new token
-            secret["TOKEN"] = creds.token
-            secrets_client.put_secret_value(
-                SecretId=secret_id,
-                SecretString=json.dumps(secret)
-            )
+        #     # Update secret with new token
+        #     secret["TOKEN"] = creds.token
+        #     secrets_client.put_secret_value(
+        #         SecretId=secret_id,
+        #         SecretString=json.dumps(secret)
+        #     )
         
         if not creds or not creds.valid:
             raise Exception("Invalid credentials")
@@ -101,6 +103,67 @@ def get_webhook_secret():
         
     except Exception as e:
         print(f"Error retrieving webhook secret: {e}")
+        return None
+
+
+def generate_thumbnail(video_path, timestamp=5):
+    """
+    Generate a thumbnail from a video file at the specified timestamp (in seconds)
+    with the same dimensions as the original video
+    
+    Returns:
+        str: Path to the generated thumbnail file
+    """
+    try:
+        # Create a unique filename for the thumbnail
+        thumbnail_filename = f"{uuid.uuid4()}.jpg"
+        thumbnail_path = f'/tmp/{thumbnail_filename}'
+        
+        # Get video information to determine dimensions
+        probe = ffmpeg.probe(video_path)
+        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+        
+        if video_stream is None:
+            print("No video stream found")
+            return None
+        
+        print(f"Original video dimensions: {video_stream.get('width')}x{video_stream.get('height')}")
+        
+        # Generate thumbnail using ffmpeg-python with original dimensions
+        (
+            ffmpeg
+            .input(video_path, ss=timestamp)
+            .output(thumbnail_path, vframes=1)
+            .overwrite_output()
+            .run(capture_stdout=True, capture_stderr=True)
+        )
+        
+        print(f"Thumbnail generated at {thumbnail_path}")
+        return thumbnail_path
+    except Exception as e:
+        print(f"Error generating thumbnail: {e}")
+        return None
+
+
+def upload_to_s3(local_file_path, bucket_name, key):
+    """
+    Upload a file to S3 bucket
+    
+    Returns:
+        str: The S3 URL of the uploaded file
+    """
+    try:
+        s3 = boto3.client('s3')
+        s3.upload_file(local_file_path, bucket_name, key)
+        
+        # Generate the S3 URL
+        region = os.environ.get('AWS_SECRETS_MANAGER_REGION', 'us-west-1')
+        s3_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{key}"
+        
+        print(f"File uploaded to S3: {s3_url}")
+        return s3_url
+    except Exception as e:
+        print(f"Error uploading to S3: {e}")
         return None
 
 
@@ -186,6 +249,8 @@ def lambda_handler(event, context):
     # Initialize S3 client
     s3 = boto3.client('s3')
     bucket_name = os.environ.get('S3_BUCKET_NAME')
+    # Get the thumbnail bucket name from environment variable
+    thumbnail_bucket_name = os.environ.get('S3_THUMBNAIL_BUCKET_NAME')
     
     try:
         # Get object metadata
@@ -202,8 +267,18 @@ def lambda_handler(event, context):
         
         # Log the information
         print(f"Downloaded {s3_key} from {bucket_name}")
-        # print(f"File Type: {file_type}")
         print(f"File Size: {file_size} bytes")
+        
+        # Generate thumbnail from video
+        thumbnail_path = generate_thumbnail(local_file_path)
+        
+        # Define thumbnail S3 key and upload to S3
+        thumbnail_s3_key = f"{os.path.basename(s3_key)}-thumbnail.jpg"
+        thumbnail_url = None
+        
+        if thumbnail_path:
+            # Upload to the dedicated thumbnail bucket
+            thumbnail_url = upload_to_s3(thumbnail_path, thumbnail_bucket_name, thumbnail_s3_key)
         
         # Get authenticated YouTube service
         youtube = get_authenticated_service()
@@ -233,7 +308,8 @@ def lambda_handler(event, context):
                 webhook_secret = get_webhook_secret()
                 
                 webhook_payload = {
-                    "youtube_video_id": video_id
+                    "youtube_video_id": video_id,
+                    "thumbnail_url": thumbnail_url
                 }
                 
                 # Convert payload to JSON string for signature calculation
@@ -274,6 +350,10 @@ def lambda_handler(event, context):
         os.remove(local_file_path)
         print(f"Removed temporary file: {local_file_path}")
         
+        if thumbnail_path:
+            os.remove(thumbnail_path)
+            print(f"Removed temporary thumbnail file: {thumbnail_path}")
+        
         return {
             "statusCode": 200,
             "body": json.dumps({
@@ -281,6 +361,7 @@ def lambda_handler(event, context):
                 "fileSize": file_size,
                 "youtubeVideoId": video_id,
                 "youtubeUrl": f"https://www.youtube.com/watch?v={video_id}",
+                "thumbnailUrl": thumbnail_url,
                 "webhookResponse": webhook_response.status_code if webhook_response else None
             }),
         }
