@@ -106,3 +106,35 @@ If a `webhook_url` is provided, the function will send a POST request to that UR
   "youtube_video_id": "VIDEO_ID"
 }
 ```
+
+## CI/CD Workflow
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+### PR Validation
+
+When a pull request is opened against the `dev` branch, the CI pipeline will:
+- Validate the SAM template
+- Build the application
+- Run tests to ensure everything is working correctly
+
+This ensures that only working code is merged into the development branch.
+
+### Automated Deployment
+
+After a pull request is successfully merged into the `dev` branch, the CD pipeline will:
+- Build the application with SAM
+- Login to Amazon ECR
+- Deploy the application to the development environment
+
+This provides an automated way to deploy changes to the development environment after code review.
+
+### Manual Production Deployment
+
+Production deployments are done manually using:
+
+```bash
+sam deploy --config-env prod
+```
+
+This gives you control over when code is promoted to the production environment.
