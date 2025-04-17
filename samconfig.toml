@@ -19,7 +19,6 @@ confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=\"dev\""
-guided = true
 s3_prefix = "youtube-uploader"
 image_repositories = ["YouTubeUploaderFunction=008082804869.dkr.ecr.us-west-1.amazonaws.com/youtubeuploaderee8a41e3/youtubeuploaderfunctiond54705c8repo"]
 
