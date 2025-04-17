@@ -58,17 +58,6 @@ def get_authenticated_service():
             scopes=[YOUTUBE_UPLOAD_SCOPE]
         )
         
-        # Refresh if expired
-        # if creds and creds.expired and creds.refresh_token:
-        #     creds.refresh(Request())
-            
-        #     # Update secret with new token
-        #     secret["TOKEN"] = creds.token
-        #     secrets_client.put_secret_value(
-        #         SecretId=secret_id,
-        #         SecretString=json.dumps(secret)
-        #     )
-        
         if not creds or not creds.valid:
             raise Exception("Invalid credentials")
             
