@@ -47,4 +47,4 @@ jobs:
             --s3-prefix youtube-uploader \
             --region ${{ secrets.AWS_REGION }} \
             --image-repositories YouTubeUploaderFunction=${{ secrets.ECR_REPOSITORY }} \
-            --capabilities CAPABILITY_IAM 
+            --capabilities CAPABILITY_IAM

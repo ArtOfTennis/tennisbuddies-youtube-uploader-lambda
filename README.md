@@ -21,8 +21,22 @@ This Lambda function:
 ## Environment Variables
 
 The function uses the following environment variables:
-- `S3_BUCKET_NAME`: The S3 bucket containing video files (either `tennisbuddies-club` for dev or `tennisbuddies-club-prod` for prod)
-- `YOUTUBE_API_SECRET_ID`: The ID of the Secret in AWS Secrets Manager containing YouTube API credentials (set to `TennisBuddies/YoutubeAPI`)
+- `S3_BUCKET_NAME`: The S3 bucket containing video files
+  - Dev: `tennisbuddies-club`
+  - Preview: `tennisbuddies-club-prev`
+  - Prod: `tennisbuddies-club-prod`
+- `S3_THUMBNAIL_BUCKET_NAME`: The S3 bucket containing thumbnail files
+  - Dev: `tennisbuddies-club-thumbnails`
+  - Preview: `tennisbuddies-club-thumbnails-prev`
+  - Prod: `tennisbuddies-club-thumbnails-prod`
+- `YOUTUBE_API_SECRET_ID`: The ID of the Secret in AWS Secrets Manager containing YouTube API credentials
+  - Dev: `TennisBuddies/YoutubeAPI`
+  - Preview: `TennisBuddies/YoutubeAPI-Prev`
+  - Prod: `TennisBuddies/YoutubeAPI-Prod`
+- `WEBHOOK_SECRET_ID`: The ID of the Secret in AWS Secrets Manager containing webhook secrets
+  - Dev: `TennisBuddies/WebhookSecret`
+  - Preview: `TennisBuddies/WebhookSecret-Prev`
+  - Prod: `TennisBuddies/WebhookSecret-Prod`
 - `AWS_SECRETS_MANAGER_REGION`: The AWS region for Secrets Manager (set to `us-west-1`)
 
 ## YouTube API Credentials
@@ -54,6 +68,12 @@ To deploy to the dev environment:
 sam deploy
 ```
 
+To deploy to the preview environment:
+
+```bash
+sam deploy --config-env preview
+```
+
 To deploy to production:
 
 ```bash
@@ -72,8 +92,24 @@ The application uses the following configuration:
 ## IAM Permissions
 
 The Lambda function has the following permissions:
-- Read access to the S3 bucket (`tennisbuddies-club` for dev or `tennisbuddies-club-prod` for prod)
-- Access to retrieve secret values from AWS Secrets Manager for the secret `TennisBuddies/YoutubeAPI`
+- Read access to the S3 bucket:
+  - Dev: `tennisbuddies-club`
+  - Preview: `tennisbuddies-club-prev`
+  - Prod: `tennisbuddies-club-prod`
+- Read access to the thumbnail S3 bucket:
+  - Dev: `tennisbuddies-club-thumbnails`
+  - Preview: `tennisbuddies-club-thumbnails-prev`
+  - Prod: `tennisbuddies-club-thumbnails-prod`
+- Access to retrieve secret values from AWS Secrets Manager:
+  - Dev:
+    - `TennisBuddies/YoutubeAPI-cKJ3lH`
+    - `TennisBuddies/WebhookSecret-CfK4H6`
+  - Preview:
+    - `TennisBuddies/YoutubeAPI-Prev-2UTaHW`
+    - `TennisBuddies/WebhookSecret-Prev-sHxaTE`
+  - Prod:
+    - `TennisBuddies/YoutubeAPI-Prod-eBWbUu`
+    - `TennisBuddies/WebhookSecret-Prod-2Qrler`
 
 ## Invoking the Lambda Function
 
