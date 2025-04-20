@@ -24,7 +24,6 @@ Parameters:
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
   IsPreview: !Equals [!Ref Environment, 'preview']
-  IsProdOrPreview: !Or [!Condition IsProd, !Condition IsPreview]
 
 Resources:
   YouTubeUploaderFunction:
