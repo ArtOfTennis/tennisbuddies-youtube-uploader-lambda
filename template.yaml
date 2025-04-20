@@ -17,11 +17,14 @@ Parameters:
     Default: dev
     AllowedValues:
       - dev
+      - preview
       - prod
-    Description: Environment (dev or prod)
+    Description: Environment (dev, preview, or prod)
 
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
+  IsPreview: !Equals [!Ref Environment, 'preview']
+  IsProdOrPreview: !Or [!Condition IsProd, !Condition IsPreview]
 
 Resources:
   YouTubeUploaderFunction:
@@ -33,25 +36,55 @@ Resources:
       PackageType: Image
       Policies:
         - S3CrudPolicy:
-            BucketName: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
+            BucketName: !If 
+              - IsProd
+              - 'tennisbuddies-club-prod'
+              - !If [IsPreview, 'tennisbuddies-club-prev', 'tennisbuddies-club']
         - S3CrudPolicy:
-            BucketName: !If [IsProd, 'tennisbuddies-club-thumbnails-prod', 'tennisbuddies-club-thumbnails']
+            BucketName: !If 
+              - IsProd
+              - 'tennisbuddies-club-thumbnails-prod'
+              - !If [IsPreview, 'tennisbuddies-club-thumbnails-prev', 'tennisbuddies-club-thumbnails']
         - Statement:
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue
-              Resource: !Sub 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/YoutubeAPI-cKJ3lH'
+              Resource: !If 
+                - IsProd
+                - 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/YoutubeAPI-Prod-eBWbUu'
+                - !If 
+                  - IsPreview
+                  - 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/YoutubeAPI-Prev-2UTaHW'
+                  - 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/YoutubeAPI-cKJ3lH'
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue
-              Resource: 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/WebhookSecret-CfK4H6'
+              Resource: !If
+                - IsProd
+                - 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/WebhookSecret-Prod-2Qrler'
+                - !If
+                  - IsPreview
+                  - 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/WebhookSecret-Prev-sHxaTE'
+                  - 'arn:aws:secretsmanager:us-west-1:008082804869:secret:TennisBuddies/WebhookSecret-CfK4H6'
       Environment:
         Variables:
-          S3_BUCKET_NAME: !If [IsProd, 'tennisbuddies-club-prod', 'tennisbuddies-club']
-          S3_THUMBNAIL_BUCKET_NAME: !If [IsProd, 'tennisbuddies-club-thumbnails-prod', 'tennisbuddies-club-thumbnails']
-          YOUTUBE_API_SECRET_ID: 'TennisBuddies/YoutubeAPI'
+          S3_BUCKET_NAME: !If 
+            - IsProd
+            - 'tennisbuddies-club-prod'
+            - !If [IsPreview, 'tennisbuddies-club-prev', 'tennisbuddies-club']
+          S3_THUMBNAIL_BUCKET_NAME: !If 
+            - IsProd
+            - 'tennisbuddies-club-thumbnails-prod'
+            - !If [IsPreview, 'tennisbuddies-club-thumbnails-prev', 'tennisbuddies-club-thumbnails']
+          YOUTUBE_API_SECRET_ID: !If 
+            - IsProd
+            - 'TennisBuddies/YoutubeAPI-Prod'
+            - !If [IsPreview, 'TennisBuddies/YoutubeAPI-Prev', 'TennisBuddies/YoutubeAPI']
           AWS_SECRETS_MANAGER_REGION: 'us-west-1'
-          WEBHOOK_SECRET_ID: 'TennisBuddies/WebhookSecret'
+          WEBHOOK_SECRET_ID: !If 
+            - IsProd
+            - 'TennisBuddies/WebhookSecret-Prod'
+            - !If [IsPreview, 'TennisBuddies/WebhookSecret-Prev', 'TennisBuddies/WebhookSecret']
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./uploader_lambda
