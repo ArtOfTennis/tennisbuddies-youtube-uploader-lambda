@@ -95,6 +95,39 @@ def get_webhook_secret():
         return None
 
 
+def get_video_duration(video_path):
+    """
+    Get the duration of a video file in milliseconds
+    
+    Returns:
+        int: Duration of the video in milliseconds
+    """
+    try:
+        probe = ffmpeg.probe(video_path)
+        video_info = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+        
+        if video_info is None:
+            print("No video stream found")
+            return None
+        
+        # Get duration in seconds (as a float)
+        if 'duration' in video_info:
+            duration_sec = float(video_info['duration'])
+        elif 'duration' in probe['format']:
+            duration_sec = float(probe['format']['duration'])
+        else:
+            print("Duration not found in video or format information")
+            return None
+        
+        # Convert to milliseconds
+        duration_ms = int(duration_sec * 1000)
+        print(f"Video duration: {duration_ms} ms")
+        return duration_ms
+    except Exception as e:
+        print(f"Error getting video duration: {e}")
+        return None
+
+
 def generate_thumbnail(video_path, timestamp=5):
     """
     Generate a thumbnail from a video file at the specified timestamp (in seconds)
@@ -258,6 +291,9 @@ def lambda_handler(event, context):
         print(f"Downloaded {s3_key} from {bucket_name}")
         print(f"File Size: {file_size} bytes")
         
+        # Get video duration in milliseconds
+        duration_ms = get_video_duration(local_file_path)
+        
         # Generate thumbnail from video
         thumbnail_path = generate_thumbnail(local_file_path)
         
@@ -298,7 +334,8 @@ def lambda_handler(event, context):
                 
                 webhook_payload = {
                     "youtube_video_id": video_id,
-                    "thumbnail_url": thumbnail_url
+                    "thumbnail_url": thumbnail_url,
+                    "duration": duration_ms
                 }
                 
                 # Convert payload to JSON string for signature calculation
@@ -351,6 +388,7 @@ def lambda_handler(event, context):
                 "youtubeVideoId": video_id,
                 "youtubeUrl": f"https://www.youtube.com/watch?v={video_id}",
                 "thumbnailUrl": thumbnail_url,
+                "duration": duration_ms,
                 "webhookResponse": webhook_response.status_code if webhook_response else None
             }),
         }
