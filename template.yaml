@@ -26,7 +26,7 @@ Conditions:
   IsPreview: !Equals [!Ref Environment, 'preview']
 
 Resources:
-  YouTubeUploaderFunction:
+  YoutubeVideoUploaderFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: uploader_lambda/
@@ -90,9 +90,9 @@ Resources:
       DockerTag: python3.9-v1
 
 Outputs:
-  YouTubeUploaderFunction:
-    Description: "YouTube Uploader Lambda Function ARN"
-    Value: !GetAtt YouTubeUploaderFunction.Arn
-  YouTubeUploaderFunctionIamRole:
-    Description: "Implicit IAM Role created for YouTube Uploader function"
-    Value: !GetAtt YouTubeUploaderFunctionRole.Arn
+  YoutubeVideoUploaderFunction:
+    Description: "YouTube Video Uploader Lambda Function ARN"
+    Value: !GetAtt YoutubeVideoUploaderFunction.Arn
+  YoutubeVideoUploaderFunctionIamRole:
+    Description: "Implicit IAM Role created for YouTube Video Uploader function"
+    Value: !GetAtt YoutubeVideoUploaderFunctionRole.Arn

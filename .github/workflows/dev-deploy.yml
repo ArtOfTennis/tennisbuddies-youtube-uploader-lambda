@@ -46,5 +46,5 @@ jobs:
             --parameter-overrides Environment=dev \
             --s3-prefix youtube-uploader \
             --region ${{ secrets.AWS_REGION }} \
-            --image-repositories YouTubeUploaderFunction=${{ secrets.ECR_REPOSITORY }} \
+            --image-repositories ${{ secrets.ECR_REPOSITORY }} \
             --capabilities CAPABILITY_IAM

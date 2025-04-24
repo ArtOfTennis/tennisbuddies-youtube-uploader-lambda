@@ -4,7 +4,7 @@ version = 0.1
 
 [default.global.parameters]
 stack_name = "youtube-uploader"
-# image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
+image_repositories = ["YoutubeVideoUploaderFunction=008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-video-uploader"]
 
 [default.build.parameters]
 cached = true
@@ -20,7 +20,6 @@ resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=\"dev\""
 s3_prefix = "youtube-uploader"
-image_repositories = ["YouTubeUploaderFunction=008082804869.dkr.ecr.us-west-1.amazonaws.com/youtubeuploaderee8a41e3/youtubeuploaderfunctiond54705c8repo"]
 
 [default.sync.parameters]
 watch = true
@@ -31,7 +30,6 @@ region = "us-west-1"
 parameter_overrides = "Environment=\"dev\""
 guided = true
 s3_prefix = "youtube-uploader"
-image_repositories = ["YouTubeUploaderFunction=008082804869.dkr.ecr.us-west-1.amazonaws.com/youtubeuploaderee8a41e3/youtubeuploaderfunctiond54705c8repo"]
 
 [default.package.parameters]
 resolve_s3 = true
@@ -49,7 +47,6 @@ confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=prod"
-# image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
 guided = true
 
 [preview.deploy.parameters]
@@ -59,5 +56,4 @@ confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=preview"
-# image_repository = "008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-uploader-lambda"
 guided = true
