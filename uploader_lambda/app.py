@@ -128,42 +128,109 @@ def get_video_duration(video_path):
         return None
 
 
-def generate_thumbnail(video_path, timestamp=5):
+def generate_thumbnail(video_path, duration_ms=None):
     """
-    Generate a thumbnail from a video file at the specified timestamp (in seconds)
+    Generate a thumbnail from the middle of a video file
     with the same dimensions as the original video
     
+    Parameters:
+        video_path (str): Path to the video file
+        duration_ms (int, optional): Duration of the video in milliseconds. If None, it will be calculated.
+    
     Returns:
-        str: Path to the generated thumbnail file
+        str: Path to the generated thumbnail file, or None if generation failed
     """
     try:
         # Create a unique filename for the thumbnail
         thumbnail_filename = f"{uuid.uuid4()}.jpg"
         thumbnail_path = f'/tmp/{thumbnail_filename}'
         
-        # Get video information to determine dimensions
-        probe = ffmpeg.probe(video_path)
-        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+        # Print details of the file we're trying to process
+        print(f"Attempting to generate thumbnail from: {video_path}")
+        print(f"Target thumbnail path: {thumbnail_path}")
         
-        if video_stream is None:
-            print("No video stream found")
+        # Check if video file exists and is accessible
+        if not os.path.exists(video_path):
+            print(f"Error: Video file does not exist: {video_path}")
+            return None
+            
+        if not os.access(video_path, os.R_OK):
+            print(f"Error: Video file is not readable: {video_path}")
             return None
         
-        print(f"Original video dimensions: {video_stream.get('width')}x{video_stream.get('height')}")
+        # Get video information to determine dimensions and duration if not provided
+        try:
+            probe = ffmpeg.probe(video_path)
+            video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+            
+            if video_stream is None:
+                print("No video stream found")
+                return None
+            
+            print(f"Original video dimensions: {video_stream.get('width')}x{video_stream.get('height')}")
+            
+            # Calculate duration if not provided
+            if duration_ms is None:
+                if 'duration' in video_stream:
+                    duration_sec = float(video_stream['duration'])
+                elif 'duration' in probe['format']:
+                    duration_sec = float(probe['format']['duration'])
+                else:
+                    print("Duration not found in video or format information")
+                    return None
+                
+                duration_ms = int(duration_sec * 1000)
+                print(f"Calculated video duration: {duration_ms} ms")
+        except Exception as e:
+            print(f"Error probing video file: {e}")
+            return None
         
-        # Generate thumbnail using ffmpeg-python with original dimensions
-        (
-            ffmpeg
-            .input(video_path, ss=timestamp)
-            .output(thumbnail_path, vframes=1)
-            .overwrite_output()
-            .run(capture_stdout=True, capture_stderr=True)
-        )
+        # Calculate the middle point of the video in seconds
+        middle_point_sec = duration_ms / 2000  # Convert ms to seconds and find middle
+        print(f"Using middle point for thumbnail: {middle_point_sec} seconds")
         
-        print(f"Thumbnail generated at {thumbnail_path}")
-        return thumbnail_path
+        # Verify the /tmp directory is writable
+        print(f"Checking if /tmp directory is writable: {os.access('/tmp', os.W_OK)}")
+        
+        # Try using ffmpeg-python library first
+        ffmpeg_success = False
+        try:
+            print("Attempting to generate thumbnail using ffmpeg-python...")
+            output = (
+                ffmpeg
+                .input(video_path, ss=middle_point_sec)
+                .output(thumbnail_path, vframes=1)
+                .overwrite_output()
+                .run(capture_stdout=True, capture_stderr=True)
+            )
+            print("ffmpeg command executed successfully using ffmpeg-python")
+            ffmpeg_success = True
+        except ffmpeg.Error as e:
+            print(f"ffmpeg stderr: {e.stderr.decode('utf-8') if hasattr(e, 'stderr') else 'No stderr'}")
+            print(f"ffmpeg stdout: {e.stdout.decode('utf-8') if hasattr(e, 'stdout') else 'No stdout'}")
+            
+        
+        # List the files in /tmp to debug
+        print(f"Files in /tmp: {os.listdir('/tmp')}")
+        
+        # Verify the thumbnail was actually created
+        if os.path.exists(thumbnail_path):
+            size = os.path.getsize(thumbnail_path)
+            print(f"Thumbnail file exists with size: {size} bytes")
+            if size > 0:
+                print(f"Thumbnail generated at {thumbnail_path}")
+                return thumbnail_path
+            else:
+                print(f"Thumbnail file is empty (0 bytes)")
+                return None
+        else:
+            print(f"Thumbnail generation failed: file not found at {thumbnail_path}")
+            return None
     except Exception as e:
         print(f"Error generating thumbnail: {e}")
+        # Show the traceback for better debugging
+        import traceback
+        print(traceback.format_exc())
         return None
 
 
@@ -172,9 +239,14 @@ def upload_to_s3(local_file_path, bucket_name, key):
     Upload a file to S3 bucket
     
     Returns:
-        str: The S3 URL of the uploaded file
+        str: The S3 URL of the uploaded file, or None if upload fails
     """
     try:
+        # Verify the file exists before trying to upload
+        if not os.path.exists(local_file_path):
+            print(f"File does not exist: {local_file_path}")
+            return None
+            
         s3 = boto3.client('s3')
         s3.upload_file(local_file_path, bucket_name, key)
         
@@ -295,15 +367,18 @@ def lambda_handler(event, context):
         duration_ms = get_video_duration(local_file_path)
         
         # Generate thumbnail from video
-        thumbnail_path = generate_thumbnail(local_file_path)
+        thumbnail_path = generate_thumbnail(local_file_path, duration_ms)
         
         # Define thumbnail S3 key and upload to S3
         thumbnail_s3_key = f"{os.path.basename(s3_key)}-thumbnail.jpg"
         thumbnail_url = None
         
-        if thumbnail_path:
+        if thumbnail_path and os.path.exists(thumbnail_path):
             # Upload to the dedicated thumbnail bucket
             thumbnail_url = upload_to_s3(thumbnail_path, thumbnail_bucket_name, thumbnail_s3_key)
+        else:
+            print(f"Thumbnail file does not exist or was not generated correctly")
+            thumbnail_path = None  # Reset to None if file doesn't exist
         
         # Get authenticated YouTube service
         youtube = get_authenticated_service()
@@ -373,12 +448,19 @@ def lambda_handler(event, context):
                 print(f"Error sending webhook notification: {str(e)}")
         
         # Clean up
-        os.remove(local_file_path)
-        print(f"Removed temporary file: {local_file_path}")
+        try:
+            os.remove(local_file_path)
+            print(f"Removed temporary file: {local_file_path}")
+        except Exception as e:
+            print(f"Error removing temporary file: {str(e)}")
         
-        if thumbnail_path:
-            os.remove(thumbnail_path)
-            print(f"Removed temporary thumbnail file: {thumbnail_path}")
+        # Only try to remove the thumbnail file if it exists
+        if thumbnail_path and os.path.exists(thumbnail_path):
+            try:
+                os.remove(thumbnail_path)
+                print(f"Removed temporary thumbnail file: {thumbnail_path}")
+            except Exception as e:
+                print(f"Error removing temporary thumbnail file: {str(e)}")
         
         return {
             "statusCode": 200,
