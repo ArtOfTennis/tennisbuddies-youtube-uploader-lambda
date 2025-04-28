@@ -141,34 +141,75 @@ def generate_thumbnail(video_path, timestamp=5):
         thumbnail_filename = f"{uuid.uuid4()}.jpg"
         thumbnail_path = f'/tmp/{thumbnail_filename}'
         
-        # Get video information to determine dimensions
-        probe = ffmpeg.probe(video_path)
-        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+        # Print details of the file we're trying to process
+        print(f"Attempting to generate thumbnail from: {video_path}")
+        print(f"Target thumbnail path: {thumbnail_path}")
         
-        if video_stream is None:
-            print("No video stream found")
+        # Check if video file exists and is accessible
+        if not os.path.exists(video_path):
+            print(f"Error: Video file does not exist: {video_path}")
+            return None
+            
+        if not os.access(video_path, os.R_OK):
+            print(f"Error: Video file is not readable: {video_path}")
             return None
         
-        print(f"Original video dimensions: {video_stream.get('width')}x{video_stream.get('height')}")
+        # Get video information to determine dimensions
+        try:
+            probe = ffmpeg.probe(video_path)
+            video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+            
+            if video_stream is None:
+                print("No video stream found")
+                return None
+            
+            print(f"Original video dimensions: {video_stream.get('width')}x{video_stream.get('height')}")
+        except Exception as e:
+            print(f"Error probing video file: {e}")
+            return None
         
-        # Generate thumbnail using ffmpeg-python with original dimensions
-        (
-            ffmpeg
-            .input(video_path, ss=timestamp)
-            .output(thumbnail_path, vframes=1)
-            .overwrite_output()
-            .run(capture_stdout=True, capture_stderr=True)
-        )
+        # Verify the /tmp directory is writable
+        print(f"Checking if /tmp directory is writable: {os.access('/tmp', os.W_OK)}")
+        
+        # Try using ffmpeg-python library first
+        ffmpeg_success = False
+        try:
+            print("Attempting to generate thumbnail using ffmpeg-python...")
+            output = (
+                ffmpeg
+                .input(video_path, ss=timestamp)
+                .output(thumbnail_path, vframes=1)
+                .overwrite_output()
+                .run(capture_stdout=True, capture_stderr=True)
+            )
+            print("ffmpeg command executed successfully using ffmpeg-python")
+            ffmpeg_success = True
+        except ffmpeg.Error as e:
+            print(f"ffmpeg stderr: {e.stderr.decode('utf-8') if hasattr(e, 'stderr') else 'No stderr'}")
+            print(f"ffmpeg stdout: {e.stdout.decode('utf-8') if hasattr(e, 'stdout') else 'No stdout'}")
+            
+        
+        # List the files in /tmp to debug
+        print(f"Files in /tmp: {os.listdir('/tmp')}")
         
         # Verify the thumbnail was actually created
-        if os.path.exists(thumbnail_path) and os.path.getsize(thumbnail_path) > 0:
-            print(f"Thumbnail generated at {thumbnail_path}")
-            return thumbnail_path
+        if os.path.exists(thumbnail_path):
+            size = os.path.getsize(thumbnail_path)
+            print(f"Thumbnail file exists with size: {size} bytes")
+            if size > 0:
+                print(f"Thumbnail generated at {thumbnail_path}")
+                return thumbnail_path
+            else:
+                print(f"Thumbnail file is empty (0 bytes)")
+                return None
         else:
-            print(f"Thumbnail generation failed: file not found or empty at {thumbnail_path}")
+            print(f"Thumbnail generation failed: file not found at {thumbnail_path}")
             return None
     except Exception as e:
         print(f"Error generating thumbnail: {e}")
+        # Show the traceback for better debugging
+        import traceback
+        print(traceback.format_exc())
         return None
 
 
