@@ -128,10 +128,14 @@ def get_video_duration(video_path):
         return None
 
 
-def generate_thumbnail(video_path, timestamp=5):
+def generate_thumbnail(video_path, duration_ms=None):
     """
-    Generate a thumbnail from a video file at the specified timestamp (in seconds)
+    Generate a thumbnail from the middle of a video file
     with the same dimensions as the original video
+    
+    Parameters:
+        video_path (str): Path to the video file
+        duration_ms (int, optional): Duration of the video in milliseconds. If None, it will be calculated.
     
     Returns:
         str: Path to the generated thumbnail file, or None if generation failed
@@ -154,7 +158,7 @@ def generate_thumbnail(video_path, timestamp=5):
             print(f"Error: Video file is not readable: {video_path}")
             return None
         
-        # Get video information to determine dimensions
+        # Get video information to determine dimensions and duration if not provided
         try:
             probe = ffmpeg.probe(video_path)
             video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
@@ -164,9 +168,26 @@ def generate_thumbnail(video_path, timestamp=5):
                 return None
             
             print(f"Original video dimensions: {video_stream.get('width')}x{video_stream.get('height')}")
+            
+            # Calculate duration if not provided
+            if duration_ms is None:
+                if 'duration' in video_stream:
+                    duration_sec = float(video_stream['duration'])
+                elif 'duration' in probe['format']:
+                    duration_sec = float(probe['format']['duration'])
+                else:
+                    print("Duration not found in video or format information")
+                    return None
+                
+                duration_ms = int(duration_sec * 1000)
+                print(f"Calculated video duration: {duration_ms} ms")
         except Exception as e:
             print(f"Error probing video file: {e}")
             return None
+        
+        # Calculate the middle point of the video in seconds
+        middle_point_sec = duration_ms / 2000  # Convert ms to seconds and find middle
+        print(f"Using middle point for thumbnail: {middle_point_sec} seconds")
         
         # Verify the /tmp directory is writable
         print(f"Checking if /tmp directory is writable: {os.access('/tmp', os.W_OK)}")
@@ -177,7 +198,7 @@ def generate_thumbnail(video_path, timestamp=5):
             print("Attempting to generate thumbnail using ffmpeg-python...")
             output = (
                 ffmpeg
-                .input(video_path, ss=timestamp)
+                .input(video_path, ss=middle_point_sec)
                 .output(thumbnail_path, vframes=1)
                 .overwrite_output()
                 .run(capture_stdout=True, capture_stderr=True)
@@ -346,7 +367,7 @@ def lambda_handler(event, context):
         duration_ms = get_video_duration(local_file_path)
         
         # Generate thumbnail from video
-        thumbnail_path = generate_thumbnail(local_file_path)
+        thumbnail_path = generate_thumbnail(local_file_path, duration_ms)
         
         # Define thumbnail S3 key and upload to S3
         thumbnail_s3_key = f"{os.path.basename(s3_key)}-thumbnail.jpg"
