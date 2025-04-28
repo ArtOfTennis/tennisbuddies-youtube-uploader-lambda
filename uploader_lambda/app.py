@@ -134,7 +134,7 @@ def generate_thumbnail(video_path, timestamp=5):
     with the same dimensions as the original video
     
     Returns:
-        str: Path to the generated thumbnail file
+        str: Path to the generated thumbnail file, or None if generation failed
     """
     try:
         # Create a unique filename for the thumbnail
@@ -160,8 +160,13 @@ def generate_thumbnail(video_path, timestamp=5):
             .run(capture_stdout=True, capture_stderr=True)
         )
         
-        print(f"Thumbnail generated at {thumbnail_path}")
-        return thumbnail_path
+        # Verify the thumbnail was actually created
+        if os.path.exists(thumbnail_path) and os.path.getsize(thumbnail_path) > 0:
+            print(f"Thumbnail generated at {thumbnail_path}")
+            return thumbnail_path
+        else:
+            print(f"Thumbnail generation failed: file not found or empty at {thumbnail_path}")
+            return None
     except Exception as e:
         print(f"Error generating thumbnail: {e}")
         return None
@@ -172,9 +177,14 @@ def upload_to_s3(local_file_path, bucket_name, key):
     Upload a file to S3 bucket
     
     Returns:
-        str: The S3 URL of the uploaded file
+        str: The S3 URL of the uploaded file, or None if upload fails
     """
     try:
+        # Verify the file exists before trying to upload
+        if not os.path.exists(local_file_path):
+            print(f"File does not exist: {local_file_path}")
+            return None
+            
         s3 = boto3.client('s3')
         s3.upload_file(local_file_path, bucket_name, key)
         
@@ -301,9 +311,12 @@ def lambda_handler(event, context):
         thumbnail_s3_key = f"{os.path.basename(s3_key)}-thumbnail.jpg"
         thumbnail_url = None
         
-        if thumbnail_path:
+        if thumbnail_path and os.path.exists(thumbnail_path):
             # Upload to the dedicated thumbnail bucket
             thumbnail_url = upload_to_s3(thumbnail_path, thumbnail_bucket_name, thumbnail_s3_key)
+        else:
+            print(f"Thumbnail file does not exist or was not generated correctly")
+            thumbnail_path = None  # Reset to None if file doesn't exist
         
         # Get authenticated YouTube service
         youtube = get_authenticated_service()
@@ -373,12 +386,19 @@ def lambda_handler(event, context):
                 print(f"Error sending webhook notification: {str(e)}")
         
         # Clean up
-        os.remove(local_file_path)
-        print(f"Removed temporary file: {local_file_path}")
+        try:
+            os.remove(local_file_path)
+            print(f"Removed temporary file: {local_file_path}")
+        except Exception as e:
+            print(f"Error removing temporary file: {str(e)}")
         
-        if thumbnail_path:
-            os.remove(thumbnail_path)
-            print(f"Removed temporary thumbnail file: {thumbnail_path}")
+        # Only try to remove the thumbnail file if it exists
+        if thumbnail_path and os.path.exists(thumbnail_path):
+            try:
+                os.remove(thumbnail_path)
+                print(f"Removed temporary thumbnail file: {thumbnail_path}")
+            except Exception as e:
+                print(f"Error removing temporary thumbnail file: {str(e)}")
         
         return {
             "statusCode": 200,
