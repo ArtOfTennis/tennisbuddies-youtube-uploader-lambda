@@ -196,14 +196,27 @@ def generate_thumbnail(video_path, duration_ms=None):
         ffmpeg_success = False
         try:
             print("Attempting to generate thumbnail using ffmpeg-python...")
-            output = (
+            print(f"Creating thumbnail at path: {thumbnail_path} using middle point {middle_point_sec}")
+            
+            # Ensure thumbnail directory exists
+            # os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
+            
+            # Run the ffmpeg command with full paths
+            process = (
                 ffmpeg
                 .input(video_path, ss=middle_point_sec)
                 .output(thumbnail_path, vframes=1)
                 .overwrite_output()
                 .run(capture_stdout=True, capture_stderr=True)
             )
+            # Always print ffmpeg output
+            print(f"ffmpeg stdout: {process[0].decode('utf-8')}")
+            print(f"ffmpeg stderr: {process[1].decode('utf-8')}")
             print("ffmpeg command executed successfully using ffmpeg-python")
+            
+            # Print the actual ffmpeg command that was run
+            print(f"ffmpeg command that was executed: {' '.join(ffmpeg.input(video_path, ss=middle_point_sec).output(thumbnail_path, vframes=1).compile())}")
+            
             ffmpeg_success = True
         except ffmpeg.Error as e:
             print(f"ffmpeg stderr: {e.stderr.decode('utf-8') if hasattr(e, 'stderr') else 'No stderr'}")
@@ -212,6 +225,17 @@ def generate_thumbnail(video_path, duration_ms=None):
         
         # List the files in /tmp to debug
         print(f"Files in /tmp: {os.listdir('/tmp')}")
+        
+        # Check if the thumbnail file was created in a subdirectory
+        if not os.path.exists(thumbnail_path):
+            print(f"Thumbnail not found at {thumbnail_path}, checking subdirectories...")
+            # Try to find the thumbnail in subdirectories
+            for root, dirs, files in os.walk('/tmp'):
+                for file in files:
+                    if thumbnail_filename in file:
+                        print(f"Found thumbnail at: {os.path.join(root, file)}")
+                        thumbnail_path = os.path.join(root, file)
+                        break
         
         # Verify the thumbnail was actually created
         if os.path.exists(thumbnail_path):
