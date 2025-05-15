@@ -29,6 +29,7 @@ Resources:
   YoutubeVideoUploaderFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub 'youtube-uploader-${Environment}'
       CodeUri: uploader_lambda/
       Architectures:
         - x86_64
