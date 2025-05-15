@@ -3,7 +3,7 @@
 version = 0.1
 
 [default.global.parameters]
-stack_name = "youtube-uploader"
+stack_name = "youtube-uploader-dev"
 image_repositories = ["YoutubeVideoUploaderFunction=008082804869.dkr.ecr.us-west-1.amazonaws.com/tennisbuddies/youtube-video-uploader"]
 
 [default.build.parameters]
@@ -19,7 +19,7 @@ confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=\"dev\""
-s3_prefix = "youtube-uploader"
+s3_prefix = "youtube-uploader-dev"
 
 [default.sync.parameters]
 watch = true
@@ -29,7 +29,7 @@ resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=\"dev\""
 guided = true
-s3_prefix = "youtube-uploader"
+s3_prefix = "youtube-uploader-dev"
 
 [default.package.parameters]
 resolve_s3 = true
@@ -41,19 +41,21 @@ warm_containers = "EAGER"
 warm_containers = "EAGER"
 
 [prod.deploy.parameters]
-stack_name = "youtube-uploader"
+stack_name = "youtube-uploader-prod"
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=prod"
+s3_prefix = "youtube-uploader-prod"
 guided = true
 
 [preview.deploy.parameters]
-stack_name = "youtube-uploader"
+stack_name = "youtube-uploader-preview"
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
 parameter_overrides = "Environment=preview"
+s3_prefix = "youtube-uploader-preview"
 guided = true

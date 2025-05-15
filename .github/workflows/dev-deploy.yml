@@ -42,9 +42,9 @@ jobs:
           sam deploy \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --stack-name youtube-uploader \
+            --stack-name youtube-uploader-dev \
             --parameter-overrides Environment=dev \
-            --s3-prefix youtube-uploader \
+            --s3-prefix youtube-uploader-dev \
             --region ${{ secrets.AWS_REGION }} \
             --image-repositories ${{ secrets.ECR_REPOSITORY }} \
             --capabilities CAPABILITY_IAM
