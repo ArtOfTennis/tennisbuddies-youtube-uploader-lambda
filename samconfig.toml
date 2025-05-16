@@ -50,12 +50,12 @@ parameter_overrides = "Environment=prod"
 s3_prefix = "youtube-uploader-prod"
 guided = true
 
-[preview.deploy.parameters]
-stack_name = "youtube-uploader-preview"
+[prev.deploy.parameters]
+stack_name = "youtube-uploader-prev"
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
 region = "us-west-1"
-parameter_overrides = "Environment=preview"
-s3_prefix = "youtube-uploader-preview"
+parameter_overrides = "Environment=prev"
+s3_prefix = "youtube-uploader-prev"
 guided = true
