@@ -17,13 +17,13 @@ Parameters:
     Default: dev
     AllowedValues:
       - dev
-      - preview
+      - prev
       - prod
-    Description: Environment (dev, preview, or prod)
+    Description: Environment (dev, prev, or prod)
 
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
-  IsPreview: !Equals [!Ref Environment, 'preview']
+  IsPreview: !Equals [!Ref Environment, 'prev']
 
 Resources:
   YoutubeVideoUploaderFunction:
