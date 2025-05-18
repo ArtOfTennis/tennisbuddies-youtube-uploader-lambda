@@ -70,7 +70,10 @@ Resources:
             - IsProd
             - 'tennisbuddies-club-thumbnails-prod'
             - !If [IsPreview, 'tennisbuddies-club-thumbnails-prev', 'tennisbuddies-club-thumbnails']
-          YOUTUBE_API_SECRET_ID: 'TennisBuddies/YoutubeAPI'
+          YOUTUBE_API_SECRET_ID: !If 
+            - IsProd
+            - 'TennisBuddies/YoutubeAPI-prod'
+            - !If [IsPreview, 'TennisBuddies/YoutubeAPI-prev', 'TennisBuddies/YoutubeAPI']
           AWS_SECRETS_MANAGER_REGION: 'us-west-1'
           WEBHOOK_SECRET_ID: !If 
             - IsProd
